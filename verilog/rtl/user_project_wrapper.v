@@ -45,50 +45,45 @@ module user_project_wrapper #(
     // -----------------------------
     // Instantiate your hard macro
     // -----------------------------
-   Neuromorphic_X1_wb mprj (
-`ifdef USE_POWER_PINS
-  .VDDC (vccd1),
-  .VDDA (vdda1),
-  .VSS  (vssd1),
+
+    nvm_neuron_core_256x64 mprj (
+`ifdef USE_PG_PIN
+    .VDDC (vccd1),
+    .VDDA (vdda1),
+    .VSS  (vssd1),
 `endif
+    // Wishbone Interface
+    .wbs_stb_i (wbs_stb_i),
+    .wbs_cyc_i (wbs_cyc_i),
+    .wbs_we_i  (wbs_we_i),
+    .wbs_sel_i (wbs_sel_i),
+    .wbs_dat_i (wbs_dat_i),
+    .wbs_adr_i (wbs_adr_i),
+    .wbs_dat_o (wbs_dat_o),
+    .wbs_ack_o (wbs_ack_o),
 
-  // Clocks / resets
-  .user_clk (wb_clk_i),
-  .user_rst (wb_rst_i),
-  .wb_clk_i (wb_clk_i),
-  .wb_rst_i (wb_rst_i),
+    // Scan & Test Signals
+    .ScanInCC  (io_in[4]),
+    .ScanInDL  (io_in[1]),
+    .ScanInDR  (io_in[2]),
+    .TM        (io_in[5]),
+    .ScanOutCC (io_out[0]),
 
-  // Wishbone
-  .wbs_stb_i (wbs_stb_i),
-  .wbs_cyc_i (wbs_cyc_i),
-  .wbs_we_i  (wbs_we_i),
-  .wbs_sel_i (wbs_sel_i),
-  .wbs_dat_i (wbs_dat_i),
-  .wbs_adr_i (wbs_adr_i),
-  .wbs_dat_o (wbs_dat_o),
-  .wbs_ack_o (wbs_ack_o),
-
-  // Scan/Test
-  .ScanInCC  (io_in[4]),
-  .ScanInDL  (io_in[1]),
-  .ScanInDR  (io_in[2]),
-  .TM        (io_in[5]),
-  .ScanOutCC (io_out[0]),
-
-  // Analog / bias pins (drive from analog_io[] wires you already built)
-  .Iref          (analog_io[0]),
-  .Vcc_read      (analog_io[1]),
-  .Vcomp         (analog_io[2]),
-  .Bias_comp2    (analog_io[3]),
-  .Vcc_wl_read   (analog_io[12]),
-  .Vcc_wl_set    (analog_io[5]),
-  .Vbias         (analog_io[6]),
-  .Vcc_wl_reset  (analog_io[7]),
-  .Vcc_set       (analog_io[8]),
-  .Vcc_reset     (analog_io[9]),
-  .Vcc_L         (analog_io[10]),
-  .Vcc_Body      (analog_io[11])
+    // Analog / NVM Bias Signals
+    .Iref          (analog_io[0]),
+    .Vcc_read      (analog_io[1]),
+    .Vcomp         (analog_io[2]),
+    .Bias_comp2    (analog_io[3]),
+    .Vcc_wl_read   (analog_io[12]),
+    .Vcc_wl_set    (analog_io[5]),
+    .Vbias         (analog_io[6]),
+    .Vcc_wl_reset  (analog_io[7]),
+    .Vcc_set       (analog_io[8]),
+    .Vcc_reset     (analog_io[9]),
+    .Vcc_L         (analog_io[10]),
+    .Vcc_Body      (analog_io[11])
 );
+
 
 
 endmodule
