@@ -120,8 +120,8 @@ async def reram_snn(dut):
             cocotb.log.info(f"  {idx + 1}/{len(weights)} weights programmed...")
 
     # 3. Inference Samples
-    expected = parse_expected_output(f"{path}/user_proj_tests/reram_snn/user_proj_tests/reram_snn/expected_output.hex")
-    stimuli  = parse_input_stimuli_by_sample(f"{path}/user_proj_tests/reram_snn/user_proj_tests/reram_snn/input_stimuli.hex")
+    expected = parse_expected_output(f"{path}/user_proj_tests/reram_snn/expected_output.hex")
+    stimuli  = parse_input_stimuli_by_sample(f"{path}/user_proj_tests/reram_snn/input_stimuli.hex")
 
 
     #expected = parse_expected_output("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/expected_output.hex")
