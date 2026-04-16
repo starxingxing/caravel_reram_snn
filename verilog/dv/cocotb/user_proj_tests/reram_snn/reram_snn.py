@@ -103,13 +103,15 @@ async def reram_snn(dut):
     
     cocotb.log.info("[TEST] Starting ReRam SNN weight programming...")
     
-    path = os.path.expandvars("$PROJECT_ROOT")
+    #path = os.path.expandvars("$PROJECT_ROOT")
+    #pwd = os.getcwd()
+    path = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir, os.pardir))
     print(path)
 
 
     # 2. Weight Programming
     #weights = parse_hex_file("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/weights_wishbone.hex")
-    weights = parse_hex_file(f"{path}/verilog/dv/cocotb/user_proj_tests/reram_snn/weights_wishbone.hex")
+    weights = parse_hex_file(f"{path}/user_proj_tests/reram_snn/weights_wishbone.hex")
     for idx, (addr, data) in enumerate(weights):
         # nvm_write logic
         await wishbone_write(mprj, clk, addr, (data & 0x3FFFFFFF) | MODE_PROGRAM)
@@ -118,8 +120,12 @@ async def reram_snn(dut):
             cocotb.log.info(f"  {idx + 1}/{len(weights)} weights programmed...")
 
     # 3. Inference Samples
-    expected = parse_expected_output("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/expected_output.hex")
-    stimuli  = parse_input_stimuli_by_sample("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/input_stimuli.hex")
+    expected = parse_expected_output(f"{path}/user_proj_tests/reram_snn/user_proj_tests/reram_snn/expected_output.hex")
+    stimuli  = parse_input_stimuli_by_sample(f"{path}/user_proj_tests/reram_snn/user_proj_tests/reram_snn/input_stimuli.hex")
+
+
+    #expected = parse_expected_output("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/expected_output.hex")
+    #stimuli  = parse_input_stimuli_by_sample("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/input_stimuli.hex")
     sample_ids = sorted(stimuli.keys())[:N_SAMPLES]
     
     total_correct = 0; total_checks = 0
