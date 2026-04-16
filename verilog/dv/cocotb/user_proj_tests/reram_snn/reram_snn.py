@@ -2,6 +2,7 @@ from caravel_cocotb.caravel_interfaces import test_configure, report_test
 import cocotb
 from cocotb.triggers import RisingEdge, ClockCycles, Timer
 import re
+import os
 
 # Constants from original script
 RD_DLY  = 44
@@ -85,7 +86,7 @@ async def wishbone_read(mprj, clk, addr):
     mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0; mprj.wbs_sel_i.value = 0
     return data
 
-@cocotb.test()
+@cocotb.test(timeout_time=5000000, timeout_unit='ns')
 @report_test
 async def reram_snn(dut):
     # 1. Initialize Caravel Environment
@@ -102,8 +103,13 @@ async def reram_snn(dut):
     
     cocotb.log.info("[TEST] Starting ReRam SNN weight programming...")
     
+    path = os.path.expandvars("$PROJECT_ROOT")
+    print(path)
+
+
     # 2. Weight Programming
-    weights = parse_hex_file("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/weights_wishbone.hex")
+    #weights = parse_hex_file("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/weights_wishbone.hex")
+    weights = parse_hex_file(f"{path}/verilog/dv/cocotb/user_proj_tests/reram_snn/weights_wishbone.hex")
     for idx, (addr, data) in enumerate(weights):
         # nvm_write logic
         await wishbone_write(mprj, clk, addr, (data & 0x3FFFFFFF) | MODE_PROGRAM)
