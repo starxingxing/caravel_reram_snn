@@ -44,8 +44,10 @@ module nvm_neuron_block (
     end
 
     // Spike = 1 when potential >= 0 (MSB = sign bit = 0)
-    genvar n;
+    //Fix needed: genvar after generate
     generate
+        genvar n;
+
         for (n = 0; n < NUM_NEURONS; n = n + 1) begin : spike_gen
             assign spike_o[n] = ~potential[n][15]; // potential is 2D
         end

@@ -36,6 +36,28 @@ def parse_expected_output(filename):
     return expected
 
 def parse_input_stimuli_by_sample(filename):
+    stimuli = {}
+    current = None
+    with open(filename, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Match the "// ── Sample    0" format in input_stimuli.hex
+            m = re.search(r'Sample\s+(\d+)', line)
+            if m:
+                current = int(m.group(1))
+                stimuli[current] = []
+                continue
+
+            if current is not None and not line.startswith('//') and line:
+                parts = line.split()
+                if len(parts) >= 2:
+                    stimuli[current].append((int(parts[0], 16), int(parts[1], 16)))
+    return stimuli
+
+
+
+'''
+def parse_input_stimuli_by_sample(filename):
     stimuli = {}; current = None
     with open(filename, encoding="utf-8") as f:
         for line in f:
@@ -55,7 +77,7 @@ def parse_input_stimuli_by_sample(filename):
                         stimuli[current].append((addr, int(parts[1], 16)))
                     except ValueError:
                         pass
-    return stimuli
+    return stimuli'''
 
 # --- Wishbone Handshaking (Using Caravel Hierarchy) ---
 
@@ -149,16 +171,24 @@ async def reram_snn(dut):
                 mprj.wbs_adr_i.value = addr; mprj.wbs_dat_i.value = data
                 await ClockCycles(clk, 2)
                 mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0
+
+
+            elif region == 1:
+                # CRITICAL FIX: These are READ addresses (0x30001000).
+                # Do NOT execute wishbone_write on them, or you will erase the SRAM.
+                # We can safely ignore them here because the "Check Results" loop reads them.
+                continue
+
             else:
                 await wishbone_write(mprj, clk, addr, data)
 
         await ClockCycles(clk, 100)
 
-        '''# Check Results
+        # Check Results
         for addr, exp in expected[sample]:
             act = await wishbone_read(mprj, clk, addr)
             if act == exp: total_correct += 1
             total_checks += 1
             
-    cocotb.log.info(f"[TEST] Completed. Accuracy: {total_correct}/{total_checks}") '''
+    cocotb.log.info(f"[TEST] Completed. Accuracy: {total_correct}/{total_checks}")
     print ("Done! Simulation Completed Successfully!")

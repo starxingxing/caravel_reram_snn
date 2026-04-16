@@ -61,6 +61,7 @@ module user_project_wrapper #(
     .wbs_adr_i (wbs_adr_i),
     .wbs_dat_o (wbs_dat_o),
     .wbs_ack_o (wbs_ack_o),
+    .wb_rst_i (wb_rst_i),
     .wb_clk_i  (wb_clk_i), // this better not be the issue...
 
     // Scan & Test Signals
