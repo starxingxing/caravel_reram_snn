@@ -122,7 +122,7 @@ module nvm_neuron_core_256x64 (
   );
 
   // ── output mux ─────────────────────────────────────────────────────────
-  assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] :
+  assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] : // slave_dat_o doesn't seem to be making it to output
                      neuron_spike_out_select  ? slave_dat_o[1] :
                      32'b0;
   assign wbs_ack_o = |slave_ack_o;

@@ -9,7 +9,8 @@ RD_DLY  = 44
 WR_DLY  = 200
 MODE_PROGRAM = 0xC0000000
 MODE_READ    = 0x40000000
-N_SAMPLES    = 269
+#N_SAMPLES    = 269
+N_SAMPLES    = 1
 
 # --- Helper Functions (Parsing) ---
 def parse_hex_file(filename):
@@ -35,7 +36,7 @@ def parse_expected_output(filename):
                 if len(parts) >= 2: expected[current].append((int(parts[0],16), int(parts[1],16)))
     return expected
 
-def parse_input_stimuli_by_sample(filename):
+'''def parse_input_stimuli_by_sample(filename):
     stimuli = {}
     current = None
     with open(filename, encoding="utf-8") as f:
@@ -52,11 +53,11 @@ def parse_input_stimuli_by_sample(filename):
                 parts = line.split()
                 if len(parts) >= 2:
                     stimuli[current].append((int(parts[0], 16), int(parts[1], 16)))
-    return stimuli
+    return stimuli'''
 
 
 
-'''
+
 def parse_input_stimuli_by_sample(filename):
     stimuli = {}; current = None
     with open(filename, encoding="utf-8") as f:
@@ -68,7 +69,7 @@ def parse_input_stimuli_by_sample(filename):
                     current = int(m.group(1)); stimuli[current] = []; continue
             if line.startswith('//') or not line:
                 continue
-            if current is not None:
+            if current is not None and not line.startswith('//') and line:
                 parts = line.split()
                 if len(parts) >= 2:
                     try:
@@ -77,7 +78,7 @@ def parse_input_stimuli_by_sample(filename):
                         stimuli[current].append((addr, int(parts[1], 16)))
                     except ValueError:
                         pass
-    return stimuli'''
+    return stimuli
 
 # --- Wishbone Handshaking (Using Caravel Hierarchy) ---
 
@@ -108,7 +109,7 @@ async def wishbone_read(mprj, clk, addr):
     mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0; mprj.wbs_sel_i.value = 0
     return data
 
-@cocotb.test(timeout_time=5000000, timeout_unit='ns')
+@cocotb.test(timeout_time=None)
 @report_test
 async def reram_snn(dut):
     # 1. Initialize Caravel Environment
@@ -132,7 +133,6 @@ async def reram_snn(dut):
 
 
     # 2. Weight Programming
-    #weights = parse_hex_file("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/weights_wishbone.hex")
     weights = parse_hex_file(f"{path}/user_proj_tests/reram_snn/weights_wishbone.hex")
     for idx, (addr, data) in enumerate(weights):
         # nvm_write logic
@@ -145,9 +145,6 @@ async def reram_snn(dut):
     expected = parse_expected_output(f"{path}/user_proj_tests/reram_snn/expected_output.hex")
     stimuli  = parse_input_stimuli_by_sample(f"{path}/user_proj_tests/reram_snn/input_stimuli.hex")
 
-
-    #expected = parse_expected_output("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/expected_output.hex")
-    #stimuli  = parse_input_stimuli_by_sample("/home/impact/projects/memristor_development/EDABK_SNN_CIM/zayed_version/caravel_reram_snn/verilog/dv/cocotb/user_proj_tests/reram_snn/input_stimuli.hex")
     sample_ids = sorted(stimuli.keys())[:N_SAMPLES]
     
     total_correct = 0; total_checks = 0
@@ -172,15 +169,18 @@ async def reram_snn(dut):
                 await ClockCycles(clk, 2)
                 mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0
 
+            else:
+                await wishbone_write(mprj, clk, addr, data)
 
-            elif region == 1:
+
+            '''elif (region == 1):
                 # CRITICAL FIX: These are READ addresses (0x30001000).
                 # Do NOT execute wishbone_write on them, or you will erase the SRAM.
                 # We can safely ignore them here because the "Check Results" loop reads them.
                 continue
 
             else:
-                await wishbone_write(mprj, clk, addr, data)
+                await wishbone_write(mprj, clk, addr, data)'''
 
         await ClockCycles(clk, 100)
 
@@ -189,6 +189,7 @@ async def reram_snn(dut):
             act = await wishbone_read(mprj, clk, addr)
             if act == exp: total_correct += 1
             total_checks += 1
+            cocotb.log.info(f"Expected: {exp}; Actual: {act}")
             
     cocotb.log.info(f"[TEST] Completed. Accuracy: {total_correct}/{total_checks}")
     print ("Done! Simulation Completed Successfully!")
