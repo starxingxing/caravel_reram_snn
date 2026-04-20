@@ -48,6 +48,7 @@ module nvm_neuron_core_256x64 (
 
   // ── slave buses ────────────────────────────────────────────────────────
   wire [31:0] slave_dat_o [1:0];
+  wire [31:0] final_output_read;
   wire  [1:0] slave_ack_o;
   wire [63:0] spike_o;
 
@@ -118,12 +119,13 @@ module nvm_neuron_core_256x64 (
     .wbs_adr_i(wbs_adr_i),
     .wbs_dat_i(spike_write_data),
     .wbs_ack_o(slave_ack_o[1]),
-    .wbs_dat_o(slave_dat_o[1])
+    //.wbs_dat_o(slave_dat_o[1])
+    .wbs_dat_o(final_output_read)
   );
 
   // ── output mux ─────────────────────────────────────────────────────────
   assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] : // slave_dat_o doesn't seem to be making it to output
-                     neuron_spike_out_select  ? slave_dat_o[1] :
+                     neuron_spike_out_select  ? final_output_read : // purely combinational... why are we not seeing the proper value on the output?
                      32'b0;
   assign wbs_ack_o = |slave_ack_o;
 

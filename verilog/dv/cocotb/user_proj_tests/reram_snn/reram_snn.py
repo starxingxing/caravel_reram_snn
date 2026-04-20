@@ -82,20 +82,36 @@ def parse_input_stimuli_by_sample(filename):
 
 # --- Wishbone Handshaking (Using Caravel Hierarchy) ---
 
-async def wishbone_write(mprj, clk, addr, data):
+async def wishbone_write(mprj, clk, addr, data): # need ack
     mprj.wbs_cyc_i.value = 1; mprj.wbs_stb_i.value = 1
     mprj.wbs_we_i.value  = 1; mprj.wbs_sel_i.value = 0xF
     mprj.wbs_adr_i.value = addr; mprj.wbs_dat_i.value = data
+
+    # CRITICAL FIX: Wait for the ACK from the slave/crossbar
     await RisingEdge(clk)
+    while mprj.wbs_ack_o.value != 1:
+        await RisingEdge(clk)
+
     mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0
     mprj.wbs_we_i.value  = 0; mprj.wbs_sel_i.value = 0; mprj.wbs_dat_i.value = 0
 
-async def wishbone_read(mprj, clk, addr):
+async def wishbone_read(mprj, clk, addr): # need ack
     mprj.wbs_cyc_i.value = 1; mprj.wbs_stb_i.value = 1
     mprj.wbs_we_i.value  = 0; mprj.wbs_sel_i.value = 0xF
     mprj.wbs_adr_i.value = addr; mprj.wbs_dat_i.value = 0
-    await RisingEdge(clk) # Request phase
-    await RisingEdge(clk) # Response phase
+
+    # CRITICAL FIX: Wait for the ACK before reading the data
+    await RisingEdge(clk)
+    while mprj.wbs_ack_o.value != 1:
+        await RisingEdge(clk)
+
+
+
+
+    #await RisingEdge(clk) # Request phase
+    #await RisingEdge(clk) # Response phase
+    #await RisingEdge(clk) # Maybe needs another clock cycle to solve output issue?
+    #await RisingEdge(clk)
 
     # Check if the value is valid before converting to integer
     resp_val = mprj.wbs_dat_o.value
@@ -161,15 +177,27 @@ async def reram_snn(dut):
         for addr, data in stimuli[sample]:
             region = (addr >> 12) & 0xF
             if region == 0: # nvm_inference_read logic
-                await wishbone_write(mprj, clk, addr, (data & 0x3FFFFFFF) | MODE_READ)
+                await wishbone_write(mprj, clk, addr, (data & 0x3FFFFFFF) | MODE_READ) # This may be the culprit (04/20/2026)
                 await ClockCycles(clk, RD_DLY + 2)
+                await wishbone_write(mprj, clk, addr, data)
                 # Phase 3 handshake
-                mprj.wbs_cyc_i.value = 1; mprj.wbs_stb_i.value = 1
-                mprj.wbs_adr_i.value = addr; mprj.wbs_dat_i.value = data
-                await ClockCycles(clk, 2)
-                mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0
+                #mprj.wbs_cyc_i.value = 1; mprj.wbs_stb_i.value = 1
+                #mprj.wbs_we_i.value  = 0; mprj.wbs_sel_i.value = 0xF
+                #mprj.wbs_adr_i.value = addr; mprj.wbs_dat_i.value = data
+                #await ClockCycles(clk, 2)
+                #mprj.wbs_cyc_i.value = 0; mprj.wbs_stb_i.value = 0
+                #mprj.wbs_we_i.value  = 0; mprj.wbs_sel_i.value = 0; mprj.wbs_dat_i.value = 0
+
+
+            elif (region == 1):
+                # CRITICAL FIX: These are READ addresses (0x30001000).
+                # Do NOT execute wishbone_write on them, or you will erase the SRAM.
+                # We can safely ignore them here because the "Check Results" loop reads them.
+                cocotb.log.info(f"Region 1 Detected-- Reading Output.")
+                continue
 
             else:
+                cocotb.log.info(f"Region {region} Detected.")
                 await wishbone_write(mprj, clk, addr, data)
 
 
