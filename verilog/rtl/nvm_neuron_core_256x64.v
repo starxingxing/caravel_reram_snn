@@ -10,43 +10,26 @@
 
 module nvm_neuron_core_256x64 (
 `ifdef USE_PG_PIN
-    inout         VDDC1,            // 0 V analog ground
-   inout         VDDC2,            // 0 V analog ground
-   inout         VDDA1,           // 1.8 V analog supply (mapped to vdda1)
-   inout         VDDA2,           // 1.8 V analog supply (mapped to vdda1)
-   inout         VSS,           // 1.8 V analog core digital supply (mapped to vccd1)
+    input  VDDC, input  VDDA, input  VSS,
 `endif
-    input         user_clk,     // user clock
-  input         user_rst,     // user reset
-  input         wb_clk_i,     // Wishbone clock
-  input         wb_rst_i,     // Wishbone reset (Active High)
-  input         wbs_stb_i,    // Wishbone strobe
-  input         wbs_cyc_i,    // Wishbone cycle indicator
-  input         wbs_we_i,     // Wishbone write enable: 1=write, 0=read
-  input  [3:0]  wbs_sel_i,    // Wishbone byte select (must be 4'hF for 32-bit op)
-  input  [31:0] wbs_dat_i,    // Wishbone write data (becomes DI to core)
-  input  [31:0] wbs_adr_i,    // Wishbone address
-  output [31:0] wbs_dat_o,    // Wishbone read data output (driven by DO from core)
-  output        wbs_ack_o,     // Wishbone acknowledge output (core_ack from core)
-  
-  // Scan/Test Pins
-  input         ScanInCC,        // Scan enable
-  input         ScanInDL,        // Data scan chain input (user_clk domain)
-  input         ScanInDR,        // Data scan chain input (wb_clk domain)
-  input         TM,              // Test mode
-  output        ScanOutCC,       // Data scan chain output
-
-  // Analog Pins
-  input         Iref,            // 100 ÂµA current reference
-  input         Vcc_read,        // 0.3 V read rail
-  input         Vcomp,           // 0.6 V comparator bias
-  input         Bias_comp2,      // 0.6 V comparator bias
-  input         Vcc_wl_read,     // 0.7 V wordline read rail
-  input         Vcc_wl_set,      // 1.8 V wordline set rail
-  input         Vbias,           // 1.8 V analog bias
-  input         Vcc_wl_reset,    // 2.6 V wordline reset rail
-  input         Vcc_set,         // 3.3 V array set rail
-  input         dc_bias
+    input         wb_clk_i,
+    input         wb_rst_i,
+    input         wbs_stb_i,
+    input         wbs_cyc_i,
+    input         wbs_we_i,
+    input  [3:0]  wbs_sel_i,
+    input  [31:0] wbs_dat_i,
+    input  [31:0] wbs_adr_i,
+    output [31:0] wbs_dat_o,
+    output        wbs_ack_o,
+    input         ScanInCC, input  ScanInDL, input  ScanInDR,
+    input         TM,       output ScanOutCC,
+    input         Iref,    input  Vcc_read,  input  Vcomp,
+    input         Bias_comp2,               input  Vcc_wl_read,
+    input         Vcc_wl_set,              input  Vbias,
+    input         Vcc_wl_reset,            input  Vcc_set,
+    input         Vcc_reset,               input  Vcc_L,
+    input         Vcc_Body
 );
 
   // ── address decode ─────────────────────────────────────────────────────
@@ -79,38 +62,27 @@ module nvm_neuron_core_256x64 (
   wire [15:0] connection = slave_dat_o[0][15:0];
 
   // ── synapse matrix ─────────────────────────────────────────────────────
-  Neuromorphic_X1_wb synapse_matrix_inst (
+  nvm_synapse_matrix synapse_matrix_inst (
 `ifdef USE_PG_PIN
-    .VDDC1(VDDC2),
-      .VDDC2(VDDC2),
-      .VDDA1(VDDA1),
-      .VDDA2(VDDA2),
-      .VSS(VSS),
+    .VDDC(VDDC), .VDDA(VDDA), .VSS(VSS),
 `endif
-    .user_clk (wb_clk_i),
-  .user_rst (wb_rst_i),
-  .wb_clk_i (wb_clk_i),
-  .wb_rst_i (wb_rst_i),
-    .wbs_stb_i(wbs_stb_i),
-    .wbs_cyc_i(wbs_cyc_i),
-    .wbs_we_i (wbs_we_i),
+    .wb_clk_i (wb_clk_i),
+    .wb_rst_i (wb_rst_i),
+    .wbs_stb_i(wbs_stb_i & synapse_matrix_select),
+    .wbs_cyc_i(wbs_cyc_i & synapse_matrix_select),
+    .wbs_we_i (wbs_we_i  & synapse_matrix_select),
     .wbs_sel_i(wbs_sel_i),
     .wbs_dat_i(wbs_dat_i),
     .wbs_adr_i(wbs_adr_i),
-    .wbs_dat_o(wbs_dat_o),
-    .wbs_ack_o(wbs_ack_o),
+    .wbs_dat_o(slave_dat_o[0]),
+    .wbs_ack_o(slave_ack_o[0]),
     .ScanInCC(ScanInCC), .ScanInDL(ScanInDL), .ScanInDR(ScanInDR),
     .TM(TM), .ScanOutCC(ScanOutCC),
-    .Iref          (Iref),
-  .Vcc_read      (Vcc_read),
-  .Vcomp         (Vcomp),
-  .Bias_comp2    (Bias_comp2),
-  .Vcc_wl_read   (Vcc_wl_read),
-  .Vcc_wl_set    (Vcc_wl_set),
-  .Vbias         (Vbias),
-  .Vcc_wl_reset  (Vcc_wl_reset),
-  .Vcc_set       (Vcc_set),
-  .dc_bias       (dc_bias)
+    .Iref(Iref), .Vcc_read(Vcc_read), .Vcomp(Vcomp),
+    .Bias_comp2(Bias_comp2), .Vcc_wl_read(Vcc_wl_read),
+    .Vcc_wl_set(Vcc_wl_set), .Vbias(Vbias),
+    .Vcc_wl_reset(Vcc_wl_reset), .Vcc_set(Vcc_set),
+    .Vcc_reset(Vcc_reset), .Vcc_L(Vcc_L), .Vcc_Body(Vcc_Body)
   );
 
   // ── neuron block ───────────────────────────────────────────────────────
@@ -150,7 +122,9 @@ module nvm_neuron_core_256x64 (
   );
 
   // ── output mux ─────────────────────────────────────────────────────────
-  //assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] : neuron_spike_out_select  ? slave_dat_o[1] : 32'b0;
-  //assign wbs_ack_o = |slave_ack_o;
+  assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] :
+                     neuron_spike_out_select  ? slave_dat_o[1] :
+                     32'b0;
+  assign wbs_ack_o = |slave_ack_o;
 
 endmodule

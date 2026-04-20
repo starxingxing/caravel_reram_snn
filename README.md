@@ -17,12 +17,12 @@ This project demonstrates the straightforward integration of a commercial Neurom
 1. **Clone the Repository:**
 
 ```
-git clone https://github.com/Baavanes/caravel_reram_snn.git
+git clone https://github.com/BMsemi/caravel_user_Neuromorphic_X1_32x32.git
 ```
 2. **Prepare Your Environment:**
 
 ```
-cd caravel_reram_snn
+cd caravel_user_Neuromorphic_X1_32x32
 make setup
 ```
 3. **Install IPM:**
@@ -34,18 +34,19 @@ pip install cf-ipm
 
 ```
 ipm install Neuromorphic_X1_32x32
-Replace the hdl folder inside ip/Neuromorphic_X1_32x32 with folder hdl(replace_in_ip_hdl_folder)
-Rename the folder hdl(replace_in_ip_hdl_folder) inside ip/Neuromorphic_X1_32x32 to hdl
-```
-5. **Run Caravel cocotb simulation**
-
-```
-make cocotb-verify-ram_word-rtl
 ```
 
-6. **Harden the User Project Wrapper using librelane/openlane2:**
+5. **Harden the User Project Wrapper using librelane/openlane2:**
 
 ```
+make user_project_wrapper
+```
+
+6. **Harden multiple instances of IP:**
+
+```
+Replace content of  /verilog/rtl/user_project_wrapper.v with user_project_wrapper_multi_inst.v
+Replace content of /openlane/user_project_wrapper/config.json with config_multi_inst.json
 make user_project_wrapper
 ```
 

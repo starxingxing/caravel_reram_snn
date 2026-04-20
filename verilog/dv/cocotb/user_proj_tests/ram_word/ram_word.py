@@ -32,3 +32,5 @@ async def ram_word(dut):
     cocotb.log.info(f"[TEST] Processing Write and Read.")
     await caravelEnv.wait_mgmt_gpio(0)
     cocotb.log.info(f"[TEST] Completed Write and Read")
+    
+    
