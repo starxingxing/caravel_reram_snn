@@ -48,42 +48,46 @@ module user_project_wrapper #(
 
     nvm_neuron_core_256x64 mprj (
 `ifdef USE_PG_PIN
-    .VDDC (vccd1),
-    .VDDA (vdda1),
-    .VSS  (vssd1),
+    .VDDC1(VDDC2),
+      .VDDC2(VDDC2),
+      .VDDA1(VDDA1),
+      .VDDA2(VDDA2),
+      .VSS(VSS),
 `endif
-    // Wishbone Interface
-    .wbs_stb_i (wbs_stb_i),
-    .wbs_cyc_i (wbs_cyc_i),
-    .wbs_we_i  (wbs_we_i),
-    .wbs_sel_i (wbs_sel_i),
-    .wbs_dat_i (wbs_dat_i),
-    .wbs_adr_i (wbs_adr_i),
-    .wbs_dat_o (wbs_dat_o),
-    .wbs_ack_o (wbs_ack_o),
-    .wb_rst_i (wb_rst_i),
-    .wb_clk_i  (wb_clk_i), // this better not be the issue...
+    // Clocks / resets
+  .user_clk (wb_clk_i),
+  .user_rst (wb_rst_i),
+  .wb_clk_i (wb_clk_i),
+  .wb_rst_i (wb_rst_i),
 
-    // Scan & Test Signals
-    .ScanInCC  (io_in[4]),
-    .ScanInDL  (io_in[1]),
-    .ScanInDR  (io_in[2]),
-    .TM        (io_in[5]),
-    .ScanOutCC (io_out[0]),
+  // Wishbone
+  .wbs_stb_i (wbs_stb_i),
+  .wbs_cyc_i (wbs_cyc_i),
+  .wbs_we_i  (wbs_we_i),
+  .wbs_sel_i (wbs_sel_i),
+  .wbs_dat_i (wbs_dat_i),
+  .wbs_adr_i (wbs_adr_i),
+  .wbs_dat_o (wbs_dat_o),
+  .wbs_ack_o (wbs_ack_o),
 
-    // Analog / NVM Bias Signals
-    .Iref          (analog_io[0]),
-    .Vcc_read      (analog_io[1]),
-    .Vcomp         (analog_io[2]),
-    .Bias_comp2    (analog_io[3]),
-    .Vcc_wl_read   (analog_io[12]),
-    .Vcc_wl_set    (analog_io[5]),
-    .Vbias         (analog_io[6]),
-    .Vcc_wl_reset  (analog_io[7]),
-    .Vcc_set       (analog_io[8]),
-    .Vcc_reset     (analog_io[9]),
-    .Vcc_L         (analog_io[10]),
-    .Vcc_Body      (analog_io[11])
+    // Scan/Test
+  .ScanInCC  (io_in[35]),
+  .ScanInDL  (io_in[22]),
+  .ScanInDR  (io_in[21]),
+  .TM        (io_in[36]),
+  .ScanOutCC (io_out[23]),
+
+  // Analog / bias pins (drive from analog_io[] wires you already built)
+  .Iref          (analog_io[27]),
+  .Vcc_read      (analog_io[26]),
+  .Vcomp         (analog_io[25]),
+  .Bias_comp2    (analog_io[24]),
+  .Vcc_wl_read   (analog_io[19]),
+  .Vcc_wl_set    (analog_io[23]),
+  .Vbias         (analog_io[22]),
+  .Vcc_wl_reset  (analog_io[21]),
+  .Vcc_set       (analog_io[20]),
+  .dc_bias       (analog_io[18])
 );
 
 
