@@ -48,6 +48,7 @@ module nvm_neuron_core_256x64 (
 
   // ── slave buses ────────────────────────────────────────────────────────
   wire [31:0] slave_dat_o [1:0];
+  wire [31:0] final_output_read;
   wire  [1:0] slave_ack_o;
   wire [63:0] spike_o;
 
@@ -68,7 +69,7 @@ module nvm_neuron_core_256x64 (
 `endif
     .wb_clk_i (wb_clk_i),
     .wb_rst_i (wb_rst_i),
-    .wbs_stb_i(wbs_stb_i & synapse_matrix_select),
+    .wbs_stb_i(wbs_stb_i & synapse_matrix_select), // Strobe issue?
     .wbs_cyc_i(wbs_cyc_i & synapse_matrix_select),
     .wbs_we_i (wbs_we_i  & synapse_matrix_select),
     .wbs_sel_i(wbs_sel_i),
@@ -108,23 +109,48 @@ module nvm_neuron_core_256x64 (
     wbs_adr_i[2] ? {spike_o[63:48], spike_o[47:32]}
                  : {spike_o[31:16], spike_o[15:0]};
 
+  // Make a latch enable
   nvm_neuron_spike_out spike_out_inst (
     .wb_clk_i (wb_clk_i),
     .wb_rst_i (wb_rst_i),
-    .wbs_cyc_i(wbs_cyc_i & (neuron_spike_out_select | spike_latch)),
-    .wbs_stb_i(wbs_stb_i & (neuron_spike_out_select | spike_latch)),
-    .wbs_we_i (wbs_we_i  & (neuron_spike_out_select | spike_latch)),
+    .wbs_cyc_i(wbs_cyc_i & neuron_spike_out_select),
+    .wbs_stb_i(wbs_stb_i & neuron_spike_out_select),
+    .wbs_we_i (wbs_we_i  & neuron_spike_out_select),
     .wbs_sel_i(wbs_sel_i),
     .wbs_adr_i(wbs_adr_i),
     .wbs_dat_i(spike_write_data),
     .wbs_ack_o(slave_ack_o[1]),
-    .wbs_dat_o(slave_dat_o[1])
+    .wbs_dat_o(final_output_read),
+    .latch_enable(spike_latch)
   );
 
+
+
+
+ /*
+  nvm_neuron_spike_out spike_out_inst (
+    .wb_clk_i (wb_clk_i),
+    .wb_rst_i (wb_rst_i),
+    //.wbs_cyc_i(wbs_cyc_i & (neuron_spike_out_select | spike_latch)),
+    .wbs_cyc_i(wbs_cyc_i & neuron_spike_out_select),
+    //.wbs_stb_i(wbs_stb_i & (neuron_spike_out_select | spike_latch)), // Strobe issue?
+    .wbs_stb_i(wbs_stb_i & neuron_spike_out_select),
+    //.wbs_we_i (wbs_we_i  & (neuron_spike_out_select | spike_latch)),
+    .wbs_we_i (wbs_we_i  & neuron_spike_out_select)
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_adr_i(wbs_adr_i),
+    .wbs_dat_i(spike_write_data),
+    .wbs_ack_o(slave_ack_o[1]),
+    .wbs_dat_o(final_output_read),
+    .latch_enable(spike_latch)
+  );*/
+
   // ── output mux ─────────────────────────────────────────────────────────
-  assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] : // slave_dat_o doesn't seem to be making it to output
-                     neuron_spike_out_select  ? slave_dat_o[1] :
-                     32'b0;
+  /*assign wbs_dat_o = synapse_matrix_select   ? slave_dat_o[0] : // slave_dat_o doesn't seem to be making it to output
+                     neuron_spike_out_select  ? final_output_read :
+                     32'b0;*/
+
+  assign wbs_dat_o = final_output_read; // Forget it-- let's see what happens when we fasten the two together
   assign wbs_ack_o = |slave_ack_o;
 
 endmodule

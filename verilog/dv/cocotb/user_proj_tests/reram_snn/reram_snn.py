@@ -10,7 +10,7 @@ WR_DLY  = 200
 MODE_PROGRAM = 0xC0000000
 MODE_READ    = 0x40000000
 #N_SAMPLES    = 269
-N_SAMPLES    = 1
+N_SAMPLES    = 10
 
 # --- Helper Functions (Parsing) ---
 def parse_hex_file(filename):
@@ -160,8 +160,8 @@ async def reram_snn(dut):
         # Run Sample Stimuli
         for addr, data in stimuli[sample]:
             region = (addr >> 12) & 0xF
-            if region == 0: # nvm_inference_read logic
-                await wishbone_write(mprj, clk, addr, (data & 0x3FFFFFFF) | MODE_READ)
+            if region == 0: # nvm_inference_read logic; This block is being run for read inference when it should not.
+                await wishbone_write(mprj, clk, addr, (data & 0x3FFFFFFF) | MODE_READ) # Culprit?
                 await ClockCycles(clk, RD_DLY + 2)
                 # Phase 3 handshake
                 mprj.wbs_cyc_i.value = 1; mprj.wbs_stb_i.value = 1
@@ -186,7 +186,7 @@ async def reram_snn(dut):
 
         # Check Results
         for addr, exp in expected[sample]:
-            act = await wishbone_read(mprj, clk, addr)
+            act = await wishbone_read(mprj, clk, addr) # Culprit?
             if act == exp: total_correct += 1
             total_checks += 1
             cocotb.log.info(f"Expected: {exp}; Actual: {act}")

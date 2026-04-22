@@ -8,7 +8,8 @@ module nvm_neuron_spike_out (
   input      [31:0] wbs_adr_i,
   input      [31:0] wbs_dat_i,
   output reg        wbs_ack_o,
-  output reg [31:0] wbs_dat_o
+  output reg [31:0] wbs_dat_o,
+  input             latch_enable
   );
 
   // 4 x 16-bit entries: sram[0]=spikes[15:0], sram[1]=spikes[31:16],
@@ -25,16 +26,14 @@ module nvm_neuron_spike_out (
       sram[2]   <= 16'b0;
       sram[3]   <= 16'b0;
     end
-    else if (wbs_cyc_i && wbs_stb_i) begin
-      wbs_ack_o <= 1'b1;
-      if (wbs_we_i) begin
-        // Write 32 bits atomically: addr selects the PAIR (sram[2*addr], sram[2*addr+1])
-        // wbs_dat_i[15:0]  -> lower sram entry  (spike bits  0-15 or 32-47)
-        // wbs_dat_i[31:16] -> upper sram entry  (spike bits 16-31 or 48-63)
-        // addr[0] (wbs_adr_i[1]) selects lower/upper pair:
-        //   wbs_adr_i[2]=0 -> write sram[0] (lo 16 bits) and sram[1] (hi 16 bits)
-        //   wbs_adr_i[2]=1 -> write sram[2] and sram[3]
-        if (!wbs_adr_i[2]) begin
+    else begin
+    // ----------------------------------------------------
+      // ACTION 1: LATCH THE HARDWARE SPIKES (REGION 3)
+      // ----------------------------------------------------
+      // This happens independently of the Wishbone Strobe.
+      // When Python sends a write to 0x30003000, latch_enable goes high.
+      if (latch_enable) begin
+         if (!wbs_adr_i[2]) begin
           if (wbs_sel_i[0]) sram[0][ 7:0] <= wbs_dat_i[ 7: 0];
           if (wbs_sel_i[1]) sram[0][15:8] <= wbs_dat_i[15: 8];
           if (wbs_sel_i[2]) sram[1][ 7:0] <= wbs_dat_i[23:16];
@@ -45,8 +44,17 @@ module nvm_neuron_spike_out (
           if (wbs_sel_i[2]) sram[3][ 7:0] <= wbs_dat_i[23:16];
           if (wbs_sel_i[3]) sram[3][15:8] <= wbs_dat_i[31:24];
         end
+
+
+
+
       end
-      else begin
+
+
+
+    if (wbs_cyc_i && wbs_stb_i) begin
+      wbs_ack_o <= 1'b1;
+      if (!wbs_we_i) begin
         // Read: addr[2]=0 -> {sram[1],sram[0]}; addr[2]=1 -> {sram[3],sram[2]}
         wbs_dat_o <= wbs_adr_i[2] ? {sram[3], sram[2]} : {sram[1], sram[0]};
       end
@@ -55,6 +63,7 @@ module nvm_neuron_spike_out (
       wbs_ack_o <= 1'b0;
       wbs_dat_o <= 32'b0;
     end
+  end
   end
 
 endmodule
